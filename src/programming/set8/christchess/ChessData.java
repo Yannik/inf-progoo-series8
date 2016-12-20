@@ -254,15 +254,11 @@ public class ChessData {
         int absDeltaX = Math.abs(piece.getX() - x);
         int absDeltaY = Math.abs(piece.getY() - y);
 
-        if (absDeltaX > 1 || absDeltaY > 1) {
-            return false;
+        if (absDeltaX <= 1 && absDeltaY <= 1 && !fieldHasOwnPiece(piece.getPlayer(), x, y)) {
+            return true;
         }
 
-        if (fieldHasOwnPiece(piece.getPlayer(), x, y)) {
-            return false;
-        }
-
-        return true;
+        return false;
 
     }
 
