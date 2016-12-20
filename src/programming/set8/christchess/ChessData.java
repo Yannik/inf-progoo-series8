@@ -251,14 +251,10 @@ public class ChessData {
             return false;
         }
 
-        int deltaX = piece.getX() - x;
-        int deltaY = piece.getY() - y;
+        int absDeltaX = Math.abs(piece.getX() - x);
+        int absDeltaY = Math.abs(piece.getY() - y);
 
-        if (deltaX != 1 && deltaX != 0 && deltaX != -1) {
-            return false;
-        }
-
-        if (deltaY != 1 && deltaY != 0 & deltaY != -1) {
+        if (absDeltaX > 1 || absDeltaY > 1) {
             return false;
         }
 
