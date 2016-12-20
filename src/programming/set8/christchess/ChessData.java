@@ -105,15 +105,15 @@ public class ChessData {
     }
 
     public static int stringToY(String str) {
-        // when casting the car returned by str.charAt to int, this will return the ascii
-        // value of the char instead of the numerical value. to counter this, we deduct
-        // the value of the char '0'
-        return 8 - (str.charAt(1) - '0');
+        if (str.length() < 2)
+            return -1;
+        return '8' - str.charAt(1);
     }
 
     public static int stringToX(String str) {
-        // 'a' == 97, 'b' == 98
-        return (int) str.charAt(0) - 97;
+        if (str.length() < 2)
+            return -1;
+        return str.charAt(0) - 'a';
     }
 
     public boolean isValidSelection(ChessPiece piece) {
