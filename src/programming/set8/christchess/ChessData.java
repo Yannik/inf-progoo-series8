@@ -2,12 +2,10 @@ package programming.set8.christchess;
 
 import acm.graphics.GPoint;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.stream.IntStream;
 
 public class ChessData {
 
@@ -17,12 +15,12 @@ public class ChessData {
 
     private ArrayList<ChessPiece> pieces = new ArrayList<>();
 
-    public static int[] DEFAULT_POSITIONS = {
+    private static int[] DEFAULT_POSITIONS = {
             ChessPiece.ROOK, ChessPiece.KNIGHT, ChessPiece.BISHOP, ChessPiece.QUEEN,
             ChessPiece.KING, ChessPiece.BISHOP, ChessPiece.KNIGHT, ChessPiece.ROOK
     };
 
-    private final HashMap<GPoint, BiFunction<ChessPiece, GPoint, Boolean>> pawnValidationLambdas = new HashMap<>();
+    private final HashMap<GPoint, BiPredicate<ChessPiece, GPoint>> pawnValidationLambdas = new HashMap<>();
 
     public void initNewGame() {
         this.player = ChessPiece.PLAYER1;
@@ -30,19 +28,18 @@ public class ChessData {
         // add pieces
         for (int x = 0; x < ChessView.columns.length; x++) {
             // pawns
-            this.pieces.add(new ChessPiece(ChessPiece.PAWN, ChessPiece.PLAYER1, x, 6));
-            this.pieces.add(new ChessPiece(ChessPiece.PAWN, ChessPiece.PLAYER2, x, 1));
+            addNewPiece(ChessPiece.PAWN, ChessPiece.PLAYER1, x, 6);
+            addNewPiece(ChessPiece.PAWN, ChessPiece.PLAYER2, x, 1);
 
             // other pieces
-            this.pieces.add(new ChessPiece(DEFAULT_POSITIONS[x], ChessPiece.PLAYER1, x, 7));
-            this.pieces.add(new ChessPiece(DEFAULT_POSITIONS[x], ChessPiece.PLAYER2, x, 0));
+            addNewPiece(DEFAULT_POSITIONS[x], ChessPiece.PLAYER1, x, 7);
+            addNewPiece(DEFAULT_POSITIONS[x], ChessPiece.PLAYER2, x, 0);
         }
     }
 
     public ChessData() {
-        BiFunction<ChessPiece, GPoint, Boolean> schlagen = (chessPiece, target) -> {
-            return fieldHasEnemyPiece(chessPiece.getPlayer(), (int)target.getX(), (int)target.getY());
-        };
+        BiPredicate<ChessPiece, GPoint> schlagen = (chessPiece, target) ->
+            fieldHasEnemyPiece(chessPiece.getPlayer(), (int)target.getX(), (int)target.getY());
 
         pawnValidationLambdas.put(new GPoint(-1,1), schlagen);
         pawnValidationLambdas.put(new GPoint(1,1), schlagen);
@@ -92,12 +89,7 @@ public class ChessData {
     }
 
     public ChessPiece getPieceAt(int x, int y) {
-        for (ChessPiece piece : pieces) {
-            if (piece.getX() == x && piece.getY() == y) {
-                return piece;
-            }
-        }
-        return null;
+        return pieces.stream().filter(p -> p.getX() == x && p.getY() == y).findFirst().orElse(null);
     }
 
     public ChessPiece getPieceAt(String str) {
@@ -120,15 +112,12 @@ public class ChessData {
         if (piece == null || piece.getPlayer() != this.player) {
             return false;
         }
-        boolean foundValidMove = false;
-        for (int x = 0; x < 8; x++) {
-            for (int y = 0; y < 8; y++) {
-                if (this.isValidMove(piece, x, y)) {
-                    foundValidMove = true;
-                }
-            }
-        }
-        return foundValidMove;
+
+        return IntStream.range(0,7).anyMatch( x -> {
+            return IntStream.range(0,7).anyMatch(y -> {
+                return this.isValidMove(piece, x, y);
+            });
+        });
     }
 
     public boolean isValidMoveForPiece(ChessPiece piece, int x, int y) {
@@ -152,7 +141,7 @@ public class ChessData {
     public boolean isValidMove(ChessPiece piece, int x, int y) {
         boolean isValidMoveForPiece = isValidMoveForPiece(piece, x, y);
 
-        if (!isValidMoveForPiece) {
+        if (!isValidMoveForPiece || fieldHasOwnPiece(piece.getPlayer(), x, y)) {
             return false;
         }
 
@@ -187,38 +176,14 @@ public class ChessData {
         return piece != null && piece.getPlayer() != player;
     }
 
-    public boolean isValidKnightMove(ChessPiece piece, int x, int y) {
+    private boolean isValidKnightMove(ChessPiece piece, int x, int y) {
         int deltaX = piece.getX() - x;
         int deltaY = piece.getY() - y;
 
-        List<GPoint> validOffsets = new ArrayList<>();
-        /*
-        validOffsets.add(new GPoint(1, 2));
-        validOffsets.add(new GPoint(2, 1));
-        validOffsets.add(new GPoint(-1, 2));
-        validOffsets.add(new GPoint(-2, 1));
-        ....
-       */
-        BiConsumer<Integer, Integer> addPermutation = (xMod, yMod) -> {
-            validOffsets.add(new GPoint(1*xMod, 2*yMod));
-            validOffsets.add(new GPoint(2*xMod, 1*yMod));
-        };
-
-        addPermutation.accept(1, 1);
-        addPermutation.accept(-1, 1);
-        addPermutation.accept(1, -1);
-        addPermutation.accept(-1,- 1);
-
-       for (GPoint validOffset : validOffsets) {
-           if (deltaX == validOffset.getX() && deltaY == validOffset.getY() && !fieldHasOwnPiece(piece.getPlayer(), x, y)) {
-               return true;
-           }
-       }
-       return false;
-
+        return (deltaX == 1 && deltaY == 2) || (deltaX == 2 && deltaY == 1);
     }
 
-    public boolean isPawnInStartingLine(ChessPiece piece) {
+    private boolean isPawnInStartingLine(ChessPiece piece) {
         if (piece.getPlayer() == ChessPiece.PLAYER1 && piece.getY() == 6) {
             return true;
         }
@@ -237,12 +202,12 @@ public class ChessData {
         int deltaX = (piece.getX() - x) * playerModifier;
         int deltaY = (piece.getY() - y) * playerModifier;
 
-        BiFunction<ChessPiece, GPoint, Boolean> lambda;
+        BiPredicate<ChessPiece, GPoint> lambda;
         if ((lambda = pawnValidationLambdas.get(new GPoint(deltaX, deltaY))) == null) {
             return false;
         }
 
-        return lambda.apply(piece, new GPoint(x, y));
+        return lambda.test(piece, new GPoint(x, y));
 
     }
 
@@ -254,7 +219,7 @@ public class ChessData {
         int absDeltaX = Math.abs(piece.getX() - x);
         int absDeltaY = Math.abs(piece.getY() - y);
 
-        return absDeltaX <= 1 && absDeltaY <= 1 && !fieldHasOwnPiece(piece.getPlayer(), x, y);
+        return absDeltaX <= 1 && absDeltaY <= 1;
 
     }
 
@@ -281,11 +246,12 @@ public class ChessData {
     private boolean isValidRunMove(ChessPiece piece, int xOffset, int yOffset, int targetX, int targetY) {
         int currX = piece.getX();
         int currY = piece.getY();
+
         for (int i = 0; i < 8; i++) {
             currX += xOffset;
             currY += yOffset;
 
-            if (currX == targetX && currY == targetY && !fieldHasOwnPiece(piece.getPlayer(), currX, currY)) {
+            if (currX == targetX && currY == targetY) {
                 return true;
             }
 
@@ -300,15 +266,13 @@ public class ChessData {
         turnCount++;
         piece.moveTo(x, y);
 
-        Iterator<ChessPiece> i = pieces.iterator();
-        while (i.hasNext()) {
-            ChessPiece otherPiece = i.next();
-            if (otherPiece != piece && otherPiece.getX() == x && otherPiece.getY() == y) {
-                i.remove();
-                return otherPiece;
-            }
-        }
-        return null;
+        ChessPiece captured = pieces.stream().filter( p -> {
+            return p != piece && p.getX() == x && p.getY() == y;
+        }).findFirst().orElse(null);
+
+        pieces.remove(captured);
+
+        return captured;
     }
 
     public void setActivePlayer(int player) {
@@ -324,6 +288,16 @@ public class ChessData {
     }
 
     public int isInCheck() {
+        /*
+        TODO: do this as stream
+        Predicate<ChessPiece> inCheck = king -> {
+            return pieces.stream().anyMatch(otherPiece -> otherPiece.getPlayer() != king.getPlayer() && this.isValidMoveForPiece(otherPiece, king.getX(), king.getY()));
+        };
+        Optional<ChessPiece> king = pieces.stream().filter(piece -> (piece.getType() == ChessPiece.KING && inCheck(piece))).findFirst();
+        if (king.isPresent()) {
+            return king.get().getPlayer();
+        }
+        */
         for (ChessPiece piece: pieces) {
             if (piece.getType() == ChessPiece.KING) {
                 for (ChessPiece controlPiece : pieces) {
