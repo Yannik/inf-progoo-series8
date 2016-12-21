@@ -1,0 +1,38 @@
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+task chessJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'programming.set8.christchess.Christchess'
+    }
+    archiveName = "christchess.jar"
+    from(sourceSets.main.output) {
+        include "programming/set8/christchess/**"
+    }
+}
+
+
+task chessSrcJar(type: Jar){
+    archiveName = "christchess-src.jar"
+    from (sourceSets.main.allSource) {
+        include "programming/set8/christchess/**"
+    }
+}
+
+artifacts {
+    archives chessJar
+    archives chessSrcJar
+}
+
+dependencies {
+    compile files('libs/acm.jar')
+}
