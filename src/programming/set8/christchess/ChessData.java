@@ -63,8 +63,10 @@ public class ChessData {
 
     }
 
-    public void addNewPiece(int type, int player, int x, int y) {
-        this.pieces.add(new ChessPiece(type, player, x, y));
+    public ChessPiece addNewPiece(int type, int player, int x, int y) {
+        ChessPiece piece = new ChessPiece(type, player, x, y);
+        this.pieces.add(piece);
+        return piece;
     }
 
     public void addNewPiece(ChessPiece piece) {

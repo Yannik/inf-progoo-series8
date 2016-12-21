@@ -2,6 +2,7 @@ package programming.set8.christchess;
 
 import acm.graphics.GPoint;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,13 +38,13 @@ public class ChessPiece {
         this(piece.getType(), piece.getPlayer(), piece.getX(), piece.getY());
     }
 
-    public List<GPoint> getValidTargetSquares(ChessData data) {
-        ArrayList<GPoint> validTargetSquares = new ArrayList<>();
+    public List<Point> getValidTargetSquares(ChessData data) {
+        ArrayList<Point> validTargetSquares = new ArrayList<>();
 
         for (int x = 0; x < ChessView.columns.length; x++) {
             for (int y = 0; y < ChessView.columns.length; y++) {
                 if (data.isValidMove(this, x, y)) {
-                    validTargetSquares.add(new GPoint(x, y));
+                    validTargetSquares.add(new Point(x, y));
                 }
             }
         }
