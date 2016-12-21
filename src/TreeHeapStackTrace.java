@@ -57,7 +57,7 @@ Garbage collection: Garbage collection is reusing memory that is not needed by t
 /**
  * This class is used to recursively print a tree
  */
-public class Tree extends GraphicsProgram {
+public class TreeHeapStackTrace extends GraphicsProgram {
 
     // keeps track of the current depth of the recursion
     private int depth = 0;
