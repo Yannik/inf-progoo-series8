@@ -5,6 +5,7 @@ import acm.graphics.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.stream.IntStream;
 
 public class ChessView {
 
@@ -43,26 +44,21 @@ public class ChessView {
             }
         }
         pieceObjects.clear();
-        for (ChessPiece piece : data.getPieces()) {
-            drawPiece(piece);
-        }
+        data.getPieces().forEach(this::drawPiece);
     }
 
     public void updateValidMoves(ChessData data, ChessPiece piece) {
-        // TODO: clean null check
         for (ChessObject<GRect> square : squares) {
             GRect squareObject = square.getObject();
-            if (piece == null) {
+            if (piece == null || !data.isValidMove(piece, square.getX(), square.getY())) {
                 squareObject.setFillColor(getSquareColor(square.getY(), square.getX()));
-            } else
-            if (data.isValidMove(piece, square.getX(), square.getY())) {
-                if (data.getPieceAt(square.getX(), square.getY()) == null) {
-                    squareObject.setFillColor(Color.GREEN);
-                } else {
-                    squareObject.setFillColor(Color.RED);
-                }
+                continue;
+            }
+
+            if (data.getPieceAt(square.getX(), square.getY()) == null) {
+                squareObject.setFillColor(Color.GREEN);
             } else {
-                squareObject.setFillColor(getSquareColor(square.getY(), square.getX()));
+                squareObject.setFillColor(Color.RED);
             }
         }
     }
@@ -87,32 +83,31 @@ public class ChessView {
     }
 
     public void drawChessboard() {
-        for (int rowNumber = 0; rowNumber < rows.length; rowNumber++) {
-            for (int columnNumber = 0; columnNumber < columns.length; columnNumber++) {
-                Color color = getSquareColor(rowNumber, columnNumber);
-                drawSquare(columnNumber, rowNumber, color);
-            }
-
-        }
+        IntStream.rangeClosed(0,7).forEach( x -> {
+            IntStream.rangeClosed(0,7).forEach( y -> {
+                Color color = getSquareColor(x, y);
+                drawSquare(x, y, color);
+            });
+        });
     }
 
     public void drawLabels() {
         printColumnNames(0);
         printColumnNames(colNameWidth + chessfieldWidth * rows.length);
 
-        for (int rowNumber = 0; rowNumber < rows.length; rowNumber++) {
-            GLabel preLabel = new GLabel(rows[rowNumber]);
+        IntStream.rangeClosed(0,7).forEach( row -> {
+            GLabel preLabel = new GLabel(rows[row]);
             preLabel.setFont(labelFont);
-            GLabel postLabel = new GLabel(rows[rowNumber]);
+            GLabel postLabel = new GLabel(rows[row]);
             postLabel.setFont(labelFont);
             gc.add(preLabel,
                     elementHorizontalCenter(preLabel, colNameWidth),
-                    colNameWidth + chessfieldWidth * rowNumber + elementVerticalCenter(preLabel, chessfieldWidth));
+                    colNameWidth + chessfieldWidth * row + elementVerticalCenter(preLabel, chessfieldWidth));
             gc.add(postLabel,
                     elementHorizontalCenter(postLabel, colNameWidth) + colNameWidth + chessfieldWidth * columns.length,
-                    colNameWidth + chessfieldWidth * rowNumber + elementVerticalCenter(postLabel, chessfieldWidth));
+                    colNameWidth + chessfieldWidth * row + elementVerticalCenter(postLabel, chessfieldWidth));
 
-        }
+        });
     }
 
     /**

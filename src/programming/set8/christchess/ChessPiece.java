@@ -39,6 +39,7 @@ public class ChessPiece {
 
     public List<GPoint> getValidTargetSquares(ChessData data) {
         ArrayList<GPoint> validTargetSquares = new ArrayList<>();
+
         for (int x = 0; x < ChessView.columns.length; x++) {
             for (int y = 0; y < ChessView.columns.length; y++) {
                 if (data.isValidMove(this, x, y)) {

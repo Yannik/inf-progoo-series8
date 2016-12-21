@@ -3,7 +3,6 @@ package programming.set8.christchess;
 import acm.graphics.GPoint;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 
@@ -113,14 +112,19 @@ public class ChessData {
             return false;
         }
 
-        return IntStream.range(0,7).anyMatch( x -> {
-            return IntStream.range(0,7).anyMatch(y -> {
+        return IntStream.rangeClosed(0,7).anyMatch( x -> {
+            return IntStream.rangeClosed(0,7).anyMatch( y -> {
                 return this.isValidMove(piece, x, y);
             });
         });
     }
 
     public boolean isValidMoveForPiece(ChessPiece piece, int x, int y) {
+
+        if (fieldHasOwnPiece(piece.getPlayer(), x, y)) {
+            return false;
+        }
+
         switch (piece.getType()) {
             case ChessPiece.ROOK:
                 return isValidRookMove(piece, x, y);
@@ -135,13 +139,13 @@ public class ChessData {
             case ChessPiece.KNIGHT:
                 return isValidKnightMove(piece, x, y);
             default:
-                return true;
+                return false;
         }
     }
     public boolean isValidMove(ChessPiece piece, int x, int y) {
         boolean isValidMoveForPiece = isValidMoveForPiece(piece, x, y);
 
-        if (!isValidMoveForPiece || fieldHasOwnPiece(piece.getPlayer(), x, y)) {
+        if (!isValidMoveForPiece) {
             return false;
         }
 
@@ -157,8 +161,7 @@ public class ChessData {
         // this could be achieved by either moving the king or capturing the
         // piece that would put the player in check, or moving into the way of the
         // piece. also, this prevents that the king puts himself into check.
-        boolean putsPlayerInCheck = (newData.isInCheck() == piece.getPlayer());
-        return !putsPlayerInCheck;
+        return !(newData.isInCheck() == piece.getPlayer());
     }
 
     // we explicitly pass the own player to this function,
@@ -177,10 +180,10 @@ public class ChessData {
     }
 
     private boolean isValidKnightMove(ChessPiece piece, int x, int y) {
-        int deltaX = piece.getX() - x;
-        int deltaY = piece.getY() - y;
+        int absDeltaX = Math.abs(piece.getX() - x);
+        int absDeltaY = Math.abs(piece.getY() - y);
 
-        return (deltaX == 1 && deltaY == 2) || (deltaX == 2 && deltaY == 1);
+        return (absDeltaX == 1 && absDeltaY == 2) || (absDeltaX == 2 && absDeltaY == 1);
     }
 
     private boolean isPawnInStartingLine(ChessPiece piece) {
@@ -266,9 +269,11 @@ public class ChessData {
         turnCount++;
         piece.moveTo(x, y);
 
-        ChessPiece captured = pieces.stream().filter( p -> {
-            return p != piece && p.getX() == x && p.getY() == y;
-        }).findFirst().orElse(null);
+        ChessPiece captured = pieces
+                .stream()
+                .filter( p -> p != piece && p.getX() == x && p.getY() == y )
+                .findFirst()
+                .orElse(null);
 
         pieces.remove(captured);
 
@@ -288,47 +293,26 @@ public class ChessData {
     }
 
     public int isInCheck() {
-        /*
-        TODO: do this as stream
-        Predicate<ChessPiece> inCheck = king -> {
-            return pieces.stream().anyMatch(otherPiece -> otherPiece.getPlayer() != king.getPlayer() && this.isValidMoveForPiece(otherPiece, king.getX(), king.getY()));
-        };
-        Optional<ChessPiece> king = pieces.stream().filter(piece -> (piece.getType() == ChessPiece.KING && inCheck(piece))).findFirst();
-        if (king.isPresent()) {
-            return king.get().getPlayer();
-        }
-        */
-        for (ChessPiece piece: pieces) {
-            if (piece.getType() == ChessPiece.KING) {
-                for (ChessPiece controlPiece : pieces) {
-                    if (piece.getPlayer() == controlPiece.getPlayer()) {
-                        continue;
-                    }
-
-                    if (this.isValidMoveForPiece(controlPiece, piece.getX(), piece.getY())) {
-                        return piece.getPlayer();
-                    }
-                }
-            }
-        }
-        return ChessPiece.NO_PLAYER;
+        return pieces
+                .stream()
+                .filter(piece -> piece.getType() == ChessPiece.KING)
+                .filter(king -> {
+                    return pieces.stream().anyMatch(p -> this.isValidMoveForPiece(p, king.getX(), king.getY()));
+                })
+                .findFirst()
+                .map(ChessPiece::getPlayer)
+                .orElse(ChessPiece.NO_PLAYER);
     }
 
     public int isCheckmate() {
         int playerInCheck = isInCheck();
 
-        if (playerInCheck != ChessPiece.NO_PLAYER) {
-            // check if any of the players pieces can make a move that prevents being in check
-            for (ChessPiece piece: pieces) {
-                if (piece.getPlayer() == playerInCheck) {
-                    if (!isValidSelection(piece)) { // only valid if the piece can move without leaving the player in check
-                        return playerInCheck;
-                    } else {
-                        return ChessPiece.NO_PLAYER;
-                    }
-                }
-            }
-        }
-        return ChessPiece.NO_PLAYER;
+        return pieces
+                .stream()
+                .filter(p -> p.getPlayer() == playerInCheck)
+                .filter(this::isValidSelection)
+                .mapToInt(p -> ChessPiece.NO_PLAYER)
+                .findFirst()
+                .orElse(playerInCheck);
     }
 }
